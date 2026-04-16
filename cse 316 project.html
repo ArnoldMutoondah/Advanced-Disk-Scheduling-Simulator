@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Disk Scheduling Simulator</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="brand">
+                <h1>DiskSim</h1>
+                <span>CSE 316 Project</span>
+            </div>
+            <ul class="nav-links">
+                <li class="nav-item active" data-target="home-page">Home</li>
+                <li class="nav-item" data-target="simulator-page">Simulator</li>
+                <li class="nav-item" data-target="comparison-page">Comparison</li>
+                <li class="nav-item" data-target="theory-page">Theory</li>
+                <li class="nav-item" data-target="about-page">About</li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Home Page -->
+            <section id="home-page" class="page active">
+                <header>
+                    <h2>Advanced Disk Scheduling Simulator</h2>
+                    <p>Visualize, analyze, and compare disk scheduling algorithms for Operating Systems.</p>
+                </header>
+                <div class="glass-panel">
+                    <h3>Welcome!</h3>
+                    <p style="margin-top: 1rem; line-height: 1.6;">
+                        This educational tool helps you understand how different disk scheduling algorithms process I/O requests. 
+                        It computes total seek time and visualizes the disk head movement in an intuitive graph.
+                    </p>
+                    <br>
+                    <button class="btn" style="width: auto; padding: 1rem 2rem;" onclick="document.querySelector('[data-target=\'simulator-page\']').click()">Launch Simulator</button>
+                </div>
+            </section>
+
+            <!-- Simulator Page -->
+            <section id="simulator-page" class="page">
+                <header>
+                    <h2>Simulator</h2>
+                    <p>Enter parameters to simulate disk scheduling.</p>
+                </header>
+                
+                <div class="dashboard-grid">
+                    <!-- Left: Chart & Flow -->
+                    <div class="glass-panel">
+                        <div class="chart-container">
+                            <canvas id="simChart"></canvas>
+                        </div>
+                        <div style="margin-top: 2rem;">
+                            <h3 style="color:var(--text-accent);">Execution Timeline</h3>
+                            <div style="overflow-x: auto;">
+                                <table class="timeline-table" id="timelineTable">
+                                    <thead><tr><th>Step</th><th>Head Moved To</th><th>Distance/Seek</th></tr></thead>
+                                    <tbody>
+                                        <!-- Dynamically filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Controls -->
+                    <div class="controls-panel">
+                        <div class="glass-panel">
+                            <h3>Parameters</h3>
+                            <br>
+                            <form id="simForm">
+                                <div class="input-group">
+                                    <label>Total Cylinders</label>
+                                    <input type="number" id="totalCyl" class="form-control" value="200" min="1" required>
+                                </div>
+                                <div class="input-group">
+                                    <label>Initial Head Position</label>
+                                    <input type="number" id="initHead" class="form-control" value="50" min="0" required>
+                                </div>
+                                <div class="input-group">
+                                    <label>Request Sequence (comma separated)</label>
+                                    <input type="text" id="reqSeq" class="form-control" value="82, 170, 43, 140, 24, 16, 190" required>
+                                    <span class="error-message" id="seqError">Invalid sequence</span>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label>Algorithm</label>
+                                    <select id="algoSelect" class="form-control">
+                                        <option value="fcfs">FCFS</option>
+                                        <option value="sstf">SSTF</option>
+                                        <option value="scan">SCAN</option>
+                                        <option value="cscan">C-SCAN</option>
+                                    </select>
+                                </div>
+
+                                <div class="input-group" id="directionGroup" style="display:none;">
+                                    <label>Direction (for SCAN/C-SCAN)</label>
+                                    <select id="dirSelect" class="form-control">
+                                        <option value="right">Towards Larger</option>
+                                        <option value="left">Towards Smaller (Zero)</option>
+                                    </select>
+                                </div>
+
+                                <button type="submit" class="btn">Simulate</button>
+                                <button type="button" class="btn btn-secondary" onclick="loadSample()">Load Sample</button>
+                            </form>
+                        </div>
+
+                        <div class="metrics-container" id="singleMetrics">
+                            <div class="metric-card">
+                                <span>Total Seek Time</span>
+                                <span id="mTotalSeek">-</span>
+                            </div>
+                            <div class="metric-card">
+                                <span>Avg Seek Time</span>
+                                <span id="mAvgSeek">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Comparison Page -->
+            <section id="comparison-page" class="page">
+                <header>
+                    <h2>Comparison Dashboard</h2>
+                    <p>Compare multiple algorithms side by side.</p>
+                </header>
+                <div class="glass-panel" style="margin-bottom: 2rem;">
+                    <h3>Select Algorithms for Comparison</h3>
+                    <div class="checkbox-group" style="margin-top: 1rem;">
+                        <label class="checkbox-label"><input type="checkbox" value="fcfs" class="comp-algo" checked><span>FCFS</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="sstf" class="comp-algo" checked><span>SSTF</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="scan" class="comp-algo" checked><span>SCAN</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="cscan" class="comp-algo" checked><span>C-SCAN</span></label>
+                    </div>
+                    <button class="btn" id="runCompareBtn" style="width: 200px;">Compare Selected</button>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="glass-panel">
+                        <div class="chart-container">
+                            <canvas id="compChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-panel">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-accent);">Comparison Results</h3>
+                        <div id="compResults" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <!-- Filled dynamically -->
+                            <p style="color:var(--text-main); font-size:0.9rem;">Run comparison to see results...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Theory Page -->
+            <section id="theory-page" class="page">
+                <header>
+                    <h2>Theory & Explanations</h2>
+                    <p>Learn about each disk scheduling algorithm.</p>
+                </header>
+                <div class="glass-panel theory-card" style="border-left: 4px solid var(--color-fcfs)">
+                    <h3>FCFS (First Come First Serve)</h3>
+                    <p>Visits requests strictly in the order they arrived.</p>
+                    <br>
+                    <ul>
+                        <li><strong>Advantages:</strong> Simple to implement, no starvation.</li>
+                        <li><strong>Disadvantages:</strong> Total seek time is high; wild swings from one end to another.</li>
+                    </ul>
+                </div>
+                <!-- Other explanations below in app.js or hardcoded -->
+                <div class="glass-panel theory-card" style="border-left: 4px solid var(--color-sstf)">
+                    <h3>SSTF (Shortest Seek Time First)</h3>
+                    <p>Picks the request closest to the current head position.</p>
+                    <br>
+                    <ul>
+                        <li><strong>Advantages:</strong> Drastically reduces average seek time.</li>
+                        <li><strong>Disadvantages:</strong> Can cause starvation for requests far away.</li>
+                    </ul>
+                </div>
+                <div class="glass-panel theory-card" style="border-left: 4px solid var(--color-scan)">
+                    <h3>SCAN (Elevator Algorithm)</h3>
+                    <p>Head moves in one direction treating requests, then reverses direction at the boundary.</p>
+                    <br>
+                    <ul>
+                        <li><strong>Advantages:</strong> Good throughput, bounded waiting time.</li>
+                        <li><strong>Disadvantages:</strong> Head moves to extreme ends even if no requests are there.</li>
+                    </ul>
+                </div>
+                <div class="glass-panel theory-card" style="border-left: 4px solid var(--color-cscan)">
+                    <h3>C-SCAN (Circular SCAN)</h3>
+                    <p>Head moves in one direction, treating requests. When it hits the boundary, it jumps to the other end without reading, and continues.</p>
+                    <br>
+                    <ul>
+                        <li><strong>Advantages:</strong> Provides a more uniform wait time than SCAN.</li>
+                        <li><strong>Disadvantages:</strong> The jump adds to the seek time.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- About Page -->
+            <section id="about-page" class="page">
+                <header>
+                    <h2>About Project</h2>
+                    <p>CSE 316 Operating Systems Project</p>
+                </header>
+                <div class="glass-panel">
+                    <h3>Project Details</h3>
+                    <br>
+                    <p><strong>Title:</strong> Advanced Disk Scheduling Simulator</p>
+                    <p><strong>Description:</strong> A visually interactive tool to determine and analyze different OS disk scheduling algorithms.</p>
+                    <br>
+                    <p><strong>Tech Stack:</strong> HTML5, CSS3 Variables, ES6 JavaScript, Chart.js</p>
+                    <br>
+                    <h4 style="color:var(--text-accent);">Summary / Recommendation Rule of Thumb:</h4>
+                    <p style="margin-top: 0.5rem; line-height: 1.6;">
+                        - If the disk load is light, FCFS is acceptable.<br>
+                        - SSTF is commonly used but can starve outer tracks under heavy load.<br>
+                        - SCAN and C-SCAN are best for heavy load because they prevent starvation and reduce variance in wait times.<br>
+                        - C-SCAN yields the most uniform wait time across all tracks.
+                    </p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
